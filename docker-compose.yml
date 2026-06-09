@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  rag:
+    build: .
+    container_name: rag-middleware
+    ports:
+      - "8330:8329"        # RAG API on :8330
+    volumes:
+      - chroma_data:/data/chroma
+      - ./app.py:/app/app.py:ro
+    environment:
+      # Changed from GEMMA_URL to OLLAMA_URL
+      OLLAMA_URL: "http://host.docker.internal:11434"
+      OLLAMA_MODEL: "gemma3:4b"  # Your installed model
+      EMBED_MODEL: "all-MiniLM-L6-v2"
+      TOP_K: "6"
+      CHUNK_SIZE: "250"
+      CHUNK_OVERLAP: "50"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  chroma_data:

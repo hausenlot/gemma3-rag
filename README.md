@@ -115,7 +115,7 @@ curl http://localhost:8330/health
 curl -X POST 'http://localhost:8330/ingest' \
   --form 'files=@/D:/CLIENT FOR ASP/control-panel/documentation/faq.txt'
 
-# 4. Chat (same format as before, just port 8330 now)
+# 4. curl check the actual conversation
 curl -X POST http://localhost:8330/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer dummy" \
@@ -149,7 +149,7 @@ curl -X POST http://localhost:8330/v1/chat/completions \
 ## Logs
 
 ```bash
-docker compose logs -f rag
+docker logs rag-middleware -f
 ```
 
 ## Stop / wipe

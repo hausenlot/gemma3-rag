@@ -8,13 +8,13 @@
 
 ```mermaid
 flowchart TD
-    A[Documents] --> B[Text Chunking<br/>chunk_text()]
-    B --> C[Embedding Generation<br/>SentenceTransformer]
-    C --> D[Vector Storage<br/>ChromaDB]
-    D --> E[Similarity Search]
-    E --> F[Retrieved Relevant Chunks]
-    F --> G[Context Injection<br/>Prompt Stuffing]
-    G --> H[LLM Response Generation<br/>Ollama]
+    A["Documents"] --> B["Text Chunking (chunk_text)"]
+    B --> C["Embedding Generation (SentenceTransformer)"]
+    C --> D["Vector Storage (ChromaDB)"]
+    D --> E["Similarity Search"]
+    E --> F["Retrieved Chunks"]
+    F --> G["Context Injection (Prompt Stuffing)"]
+    G --> H["Response Generation (Ollama)"]
 ```
 
 this is a very simple vector database-backed RAG system, but it's not a vector database itself

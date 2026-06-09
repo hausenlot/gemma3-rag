@@ -6,21 +6,16 @@
 
 # Architecture no bullshit this time
 
-Documents
-    ↓
-chunk_text()
-    ↓
-SentenceTransformer embeddings
-    ↓
-ChromaDB
-    ↓
-similarity search
-    ↓
-retrieved chunks
-    ↓
-prompt stuffing
-    ↓
-Ollama
+```mermaid
+flowchart TD
+    A[Documents] --> B[Text Chunking<br/>chunk_text()]
+    B --> C[Embedding Generation<br/>SentenceTransformer]
+    C --> D[Vector Storage<br/>ChromaDB]
+    D --> E[Similarity Search]
+    E --> F[Retrieved Relevant Chunks]
+    F --> G[Context Injection<br/>Prompt Stuffing]
+    G --> H[LLM Response Generation<br/>Ollama]
+```
 
 this is a very simple vector database-backed RAG system, but it's not a vector database itself
 

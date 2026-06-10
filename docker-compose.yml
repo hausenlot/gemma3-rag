@@ -11,15 +11,21 @@ services:
       - ./app.py:/app/app.py:ro
     environment:
       # Changed from GEMMA_URL to OLLAMA_URL
-      OLLAMA_URL: "http://host.docker.internal:11434"
-      OLLAMA_MODEL: "gemma3:4b"  # Your installed model
+      OLLAMA_URL: "http://host.docker.internal:11434" # http://172.24.0.1:11434
+      OLLAMA_MODEL: "qwen2.5:7b-instruct-q4_K_M"  # Your installed model
       EMBED_MODEL: "all-MiniLM-L6-v2"
-      TOP_K: "6"
+      TOP_K: "3"
       CHUNK_SIZE: "250"
       CHUNK_OVERLAP: "50"
-    extra_hosts:
+    extra_hosts:  
       - "host.docker.internal:host-gateway"
+    # networks: # this is only for me since i need this to make my shit works
+    #   - global-services
     restart: unless-stopped
 
 volumes:
   chroma_data:
+
+# networks: # this is only for me since i need this to make my shit works
+#   global-services:
+#     external: true

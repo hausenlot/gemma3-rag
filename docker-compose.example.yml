@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  rag:
+    build: .
+    container_name: rag-middleware
+    ports:
+      - "8330:8329" # EXTERNALLY CALL IT AT 8330 IF INTERNALLY 8329. @home call 8330, inside the container / network call 8329
+    volumes:
+      - chroma_data:/data/chroma
+      - ./app.py:/app/app.py:ro
+    environment:
+      OLLAMA_URL: "http://172.24.0.1:11434" # DOCKER BRIDGE IP
+      OLLAMA_MODEL: "qwen2.5:7b-instruct-q4_K_M"
+      EMBED_MODEL: "all-MiniLM-L6-v2"
+      TOP_K: "3"
+      CHUNK_SIZE: "250"
+      CHUNK_OVERLAP: "50"
+    networks:
+      - ragnet
+      - global-services # OPTIONAL
+    restart: unless-stopped
+
+volumes:
+  chroma_data:
+
+networks:
+  ragnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.24.0.0/16
+  # OPTIONAL
+  global-services:
+    external: true

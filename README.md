@@ -90,14 +90,14 @@ sudo systemctl status ollama
 # another check via curl
 curl http://localhost:11434/api/tags
 
-# download model (gemma3 4b) but up to you lol
-ollama pull gemma3:4b
+# download model (gemma3 4b) but up to you lol. NO THIS IS DOG SHIT USE qwen2.5:7b-instruct-q4_K_M it has function calling!
+ollama pull qwen2.5:7b-instruct-q4_K_M
 
 # model list
 ollama list
 
 # Test it!
-ollama run gemma3:4b "Hello! What is your name and what can you help me with?"
+ollama run gqwen2.5:7b-instruct-q4_K_M "Hello! What is your name and what can you help me with?"
 
 # Congrats you have a low profile model running on CPU on almost 3gb ram? slow though but good trade!
 ```
@@ -123,6 +123,11 @@ curl -X POST http://localhost:8330/v1/chat/completions \
     "messages": [{"role": "user", "content": "How to upload?"}],
     "stream": false
   }'
+
+# Optional: curl check query response (benchmark)
+curl -X POST http://localhost:8330/test/retrieval \
+  -H "Content-Type: application/json" \
+  -d '{"query": "How do I upload a PDF file?"}'
 ```
 
 ## API endpoints
@@ -132,15 +137,16 @@ curl -X POST http://localhost:8330/v1/chat/completions \
 | GET | `/health` | Status + doc count |
 | POST | `/ingest` | Upload files (PDF, TXT, MD) |
 | DELETE | `/ingest` | Wipe all indexed documents |
-| POST | `/v1/chat/completions` | Chat with RAG (Gemma-compatible) |
-| GET | `/v1/models` | Proxied from Gemma3 |
+| POST | `/v1/chat/completions` | Chat with model (Uses RAG if possible) |
+| GET | `/v1/models` | list of available model in ollama i guess |
+| POST | `/test/retrieval` | Benchmark queries |
 
 ## Environment variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `GEMMA_URL` | `http://host.docker.internal:8328` | Your Gemma3 address |
-| `GEMMA_MODEL` | `gemma3:4b` | Model name |
+| `OLLAMA_URL` | `http://host.docker.internal:8328` | Your OLLAMA address |
+| `OLLAMA_MODEL` | `gemma3:4b` | Model name |
 | `EMBED_MODEL` | `all-MiniLM-L6-v2` | Sentence transformer model |
 | `TOP_K` | `4` | Chunks to retrieve per query |
 | `CHUNK_SIZE` | `400` | Words per chunk |

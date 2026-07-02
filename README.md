@@ -1,77 +1,44 @@
 # Simple RAG for chat bot context / one source of truth.
 
-- I can add categorized knowledge for multiple app support
-- a debugger?
-- can apply i guess semantic, hybrid and full text. right now its running on bullshit and imagination.
+- Ingest categorized knowledge files (PDFs, TXT, MD) to build a robust knowledge base.
+- Hybrid Retrieval: Combines dense semantic vector search (SentenceTransformer) with sparse keyword search (BM25).
+- Dynamic Rank Fusion: Merges search results using Reciprocal Rank Fusion (RRF) and dynamic query classification weights.
+- Observability: Includes a `/test/retrieval` debug endpoint returning classification details, standalone search logs, and term overlap metrics.
 
-# Architecture no bullshit this time
+# Architecture
 
 ```mermaid
 flowchart TD
-    A["Documents"] --> B["Text Chunking (chunk_text)"]
-    B --> C["Embedding Generation (SentenceTransformer)"]
-    C --> D["Vector Storage (ChromaDB)"]
-    D --> E["Similarity Search"]
-    E --> F["Retrieved Chunks"]
-    F --> G["Context Injection (Prompt Stuffing)"]
-    G --> H["Response Generation (Ollama)"]
+    A[User Query] --> B[Query Classifier]
+    B --> C[Vector Search]
+    B --> D[BM25 Search]
+    C --> E[Result Fusion - RRF]
+    D --> E
+    E --> F[Context Injection]
+    F --> G[Ollama Response]
+    
+    H[Documents] --> I[Chunking + Metadata]
+    I --> J[Embedding Generation]
+    I --> K[BM25 Index Building]
+    J --> L[ChromaDB Storage]
 ```
 
-this is a very simple vector database-backed RAG system, but it's not a vector database itself
+This RAG middleware handles document processing and hybrid retrieval in a highly optimized loop:
 
-creates a Chroma collection.
-```py
-chroma = chromadb.PersistentClient(path="/data/chroma")
-collection = chroma.get_or_create_collection("knowledge")
-```
-Then during ingestion we are storing:
+### 1. Ingestion Pipeline
+1. **Dynamic Chunking**: Chunks text based on structural headings (`detect_heading`) and tracks positions (`first`, `middle`, `last`). Sets chunk size dynamically based on file type (e.g. smaller chunks for text/documentation, larger for source files/code).
+2. **Dense Vector Store**: Embeds chunks using `SentenceTransformer('all-MiniLM-L6-v2')` and stores vectors along with rich metadata (`heading`, `position`, `source`) in ChromaDB.
+3. **BM25 Search Indexing**: Populates the local `BM25Okapi` index synchronously with all document texts stored in the database.
 
-- chunk text
-- embedding vector
-- metadata
-
-inside Chroma.
-
-That's the vector database part.
-
-```py
-embeddings = embedder.encode(chunks).tolist()
-
-collection.upsert(
-    ids=ids,
-    embeddings=embeddings,
-    documents=chunks,
-)
-```
-
-So the RAG this time is basically this function:
-
-- Convert user question → embedding
-- Search nearest vectors
-- Return matching chunks
-
-```py
-def retrieve_context(query: str):
-    q_emb = embedder.encode([query]).tolist()
-
-    results = collection.query(
-        query_embeddings=q_emb,
-        n_results=min(TOP_K, collection.count())
-    )
-
-    return results["documents"][0]
-```
-
-Then once we got it we just inject it to the msg we will send to the model
-
-```py
-prompt = build_tool_prompt(
-    user_msg,
-    tool_results
-)
-```
-
-That's it
+### 2. Hybrid Retrieval Pipeline
+1. **Query Classification**: The user query is classified to determine retrieval weights:
+   - `exact_identifier` (error codes / versions) -> `vector_weight = 0.2`, `bm25_weight = 1.0`
+   - `short_keyword` (<= 3 words) -> `vector_weight = 0.5`, `bm25_weight = 1.0`
+   - `natural_language` (questions or > 6 words) -> `vector_weight = 1.0`, `bm25_weight = 0.2`
+   - `default` -> `vector_weight = 1.0`, `bm25_weight = 1.0`
+2. **Parallel Retrieval**: Executes vector distance search and BM25 score lookup in parallel.
+3. **Reciprocal Rank Fusion (RRF)**: Fuses both rank lists into a single consolidated result set using their rank positions and classification weights.
+4. **Context Injection**: Prepares the top-K chunks, computes word overlaps (excluding common stop words), and passes them to Ollama inside function-calling messages.
 
 # Installation
 
@@ -145,12 +112,12 @@ curl -X POST http://localhost:8330/test/retrieval \
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OLLAMA_URL` | `http://host.docker.internal:8328` | Your OLLAMA address |
-| `OLLAMA_MODEL` | `gemma3:4b` | Model name |
+| `OLLAMA_URL` | `http://host.docker.internal:11434` | Your OLLAMA address |
+| `OLLAMA_MODEL` | `qwen2.5:7b-instruct-q4_K_M` | Model name |
 | `EMBED_MODEL` | `all-MiniLM-L6-v2` | Sentence transformer model |
-| `TOP_K` | `4` | Chunks to retrieve per query |
-| `CHUNK_SIZE` | `400` | Words per chunk |
-| `CHUNK_OVERLAP` | `60` | Overlap between chunks |
+| `TOP_K` | `6` | Chunks to retrieve per query |
+| `CHUNK_SIZE` | `250` | Words per chunk |
+| `CHUNK_OVERLAP` | `50` | Overlap between chunks |
 
 ## Logs
 
